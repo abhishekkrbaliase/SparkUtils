@@ -104,14 +104,6 @@ object App {
       }
     })
 
-
-    /* val x = spark.read.cassandraFormat(table, keyspace, cluster).load()
-       .groupBy(columns.head, columns.tail: _*)
-       .count()
-       .where(s"count > $minCount")
-       .sort(desc("count"))
-       .cache()*/
-
   }
 
 
