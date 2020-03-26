@@ -1,6 +1,7 @@
 package com.abhi.utils.cassandra
 
 import com.datastax.driver.core.BoundStatement
+import com.abhi.utils.commandline
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
@@ -12,27 +13,41 @@ import scala.collection.mutable
 import com.datastax.spark.connector.cql.CassandraConnector
 
 object App {
-  val table = "documents"
-  val keyspace = "keyspace"
-
-  val minColCount = 0
-  val partitionColumns: List[String] = List("doc_number", "doc_type").map(_.toUpperCase())
-  val conditionColumn: String = "sub_doc_type".toUpperCase()
-
-  val groupByColumns: List[String] =  partitionColumns :+ conditionColumn
-  val columnValuesAllowed: Set[String] = Set("REGISTER", "OCCUPIED", "AVAILABLE", "RETARDED").map(_.toUpperCase())
-  val columnValueCount: String = "AVAILABLE".toUpperCase()
-
-  val deleteEnabled = true
-
-
-  val host = "127.0.0.1"
-  val uname = "cassandra"
-  val pswd = "cassandra"
-  //val cluster: String = "west"
 
   def main(args: Array[String]): Unit = {
 
+    val argsUtil = new CLArgUtils(System.out).process(args)
+
+    val host = argsUtil.getProperty("cassandra.host", "127.0.0.1")
+    val uname = argsUtil.getProperty("cassandra.username", "cassandra")
+    val pswd = argsUtil.getProperty("cassandra.password", "cassandra")
+    val cluster = argsUtil.getProperty("cassandra.cluster", "west")
+    val table = argsUtil.getProperty("cassandra.table", "documents")
+    val keyspace = argsUtil.getProperty("cassandra.keyspace", "keyspace")
+    val minColCount = argsUtil.getProperty("cassandra.minColCount", "50").toInt
+    val partitionColumns: List[String] = argsUtil.getProperty("cassandra.table.partitionColumns", "doc_number,doc_type").split(",").toList.map(_.toUpperCase())
+    val conditionColumn: String = argsUtil.getProperty("cassandra.table.conditionColumn", "sub_doc_type").toUpperCase()
+    val columnValuesAllowed: Set[String] = argsUtil.getProperty("cassandra.table.columnValuesAllowed", "REGISTER,OCCUPIED,AVAILABLE,RETARDED").split(",").map(_.toUpperCase()).toSet
+    val matchValueCountColumn: String = argsUtil.getProperty("cassandra.table.columnValuesAllowed.matchValueCountColumn", "AVAILABLE").toUpperCase()
+    val deleteEnabled = argsUtil.getProperty("cassandra.table.deleteEnabled", "true").toBoolean
+    val writePath = argsUtil.getProperty("row.dump.path", "hdfs:///user/deletePartitions")
+
+    println(s"host $host")
+    println(s"uname $uname")
+    println(s"pswd $pswd")
+    println(s"cluster $cluster")
+    println(s"table $table")
+    println(s"keyspace $keyspace")
+    println(s"minColCount $minColCount")
+    println(s"partitionColumns $partitionColumns")
+    println(s"conditionColumn $conditionColumn")
+    println(s"columnValuesAllowed $columnValuesAllowed")
+    println(s"matchValueCountColumn $matchValueCountColumn")
+    println(s"deleteEnabled $deleteEnabled")
+    println(s"writePath $writePath")
+
+
+    val groupByColumns: List[String] = partitionColumns :+ conditionColumn
 
     val conf = new SparkConf().setAppName("delete documents").setMaster("local")
       .set("spark.cassandra.connection.host", host)
